@@ -9,8 +9,8 @@ const {
 const {
   Keyboard
 } = require('telegram-keyboard')
-const lk21 = require("./Api/lk21")
-const cek = new lk21()
+const Anibatch = require("./Api/anibatch")
+const anibatch = new Anibatch()
 //const lk21 = new Lk21()
 
 //const bot = new Telegraf(process.env.BOT_TOKEN)
@@ -27,36 +27,36 @@ async function asyncForEach(array, callback) {
 
 
 
-const keyboard = Markup.inlineKeyboard([
-  Markup.button.url('❤️', 'http://telegraf.js.org'),
-  Markup.button.callback('Delete', 'delete')
-])
-bot.start((ctx) => ctx.replyWithDice())
-bot.settings(async (ctx) => {
-  await ctx.setMyCommands([{
-    command: '/help',
-    description: 'for help'
-  },
-    {
-      command: '/lk21',
-      description: 'untuk mencari film'
-    },
-    {
-      command: '/anime',
-      description: 'untuk mencari anime'
-    }])
-  return ctx.reply('Ok')
-})
-bot.help(async (ctx) => {
-  const commands = await ctx.getMyCommands()
-  const info = commands.reduce((acc, val) => `${acc}/${val.command} - ${val.description}\n`, '')
-  return ctx.reply(info)
-})
-bot.action('delete', ({
-  deleteMessage
-}) => deleteMessage())
-bot.on('dice', (ctx) => ctx.reply(`Value: ${ctx.message.dice.value}`))
-bot.on('message', (ctx) => ctx.copyMessage(ctx.chat.id, Markup.keyboard(keyboard)))
+// const keyboard = Markup.inlineKeyboard([
+//   Markup.button.url('❤️', 'http://telegraf.js.org'),
+//   Markup.button.callback('Delete', 'delete')
+// ])
+// bot.start((ctx) => ctx.replyWithDice())
+// bot.settings(async (ctx) => {
+//   await ctx.setMyCommands([{
+//     command: '/help',
+//     description: 'for help'
+//   },
+//     {
+//       command: '/lk21',
+//       description: 'untuk mencari film'
+//     },
+//     {
+//       command: '/anime',
+//       description: 'untuk mencari anime'
+//     }])
+//   return ctx.reply('Ok')
+// })
+// bot.help(async (ctx) => {
+//   const commands = await ctx.getMyCommands()
+//   const info = commands.reduce((acc, val) => `${acc}/${val.command} - ${val.description}\n`, '')
+//   return ctx.reply(info)
+// })
+// bot.action('delete', ({
+//   deleteMessage
+// }) => deleteMessage())
+// bot.on('dice', (ctx) => ctx.reply(`Value: ${ctx.message.dice.value}`))
+// bot.on('message', (ctx) => ctx.copyMessage(ctx.chat.id, Markup.keyboard(keyboard)))
 
 
 
@@ -69,13 +69,13 @@ bot.hears(/anime/ig, async (ctx) => {
   if (!param) {
     ctx.reply('anda belum memasukan parameter ! \n baca petunjuk /help')
   } else {
-    let tes = await cek.search(param)
+    let tes = await anibatch.search(param)
     if (!tes) {
       ctx.reply('Maaf anime yang anda cari tidak ditemukan!')
     } else {
-
       const data = tes.results
       data.forEach(function (v, i) {
+        console.log(v.id)
         ctx.replyWithPhoto({
           url: v.size_thumb[1]
         },
@@ -83,7 +83,7 @@ bot.hears(/anime/ig, async (ctx) => {
             caption: v.title,
             parse_mode: 'Markdown',
             ...Markup.inlineKeyboard([
-              Markup.button.callback('download', 'callback_query')
+              Markup.button.callback('download', 'show-anibatch-' + v.id)
               //Markup.button.callback('Italic', 'italic')
             ])
           }
@@ -95,10 +95,20 @@ bot.hears(/anime/ig, async (ctx) => {
 })
 
 
-bot.on('callback_query', (ctx) => {
+bot.action(/(^show[-]anibatch[-])+(.*)/gm, async (ctx) => {
   ctx.reply('klicked')
-  // Using context shortcut
-  ctx.answerCbQuery()
+  const id = ctx.match[2]
+  let data = await anibatch.show(id)
+    // Using context shortcut
+    ctx.answerCbQuery()
+console.log(id)
+  if (!data)  {
+    console.log(data)
+    ctx.reply('maaf data tidak ditemukan')
+  } else {
+    console.log(data)
+  }
+
 })
 
 
@@ -122,9 +132,10 @@ bot.hears('hi', (ctx) => ctx.reply('Hey there'));
 
 
 
-bot.hears(/lk21 (.+)/, async (ctx) => {
+bot.hears(/lk21/ig, async (ctx) => {
   const query = ctx.match[1]
   console.log(query)
+  ctx.reply('hello')
 
   /*
   asyncForEach(data, async (num, i, v) => {
