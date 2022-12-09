@@ -263,7 +263,7 @@ bot.on('inline_query', async (ctx) => {
   await ctx.answerInlineQuery(result);
 });
 
-bot.launch();
+bot.launch({ webhook: { domain: "https://white-marlin-kit.cyclic.app/", port: 80 } });
 
 // Enable graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
