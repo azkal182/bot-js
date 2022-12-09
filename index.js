@@ -1,3 +1,4 @@
+require('dotenv').config()
 const {
   Telegraf,
   Markup,
@@ -10,11 +11,14 @@ const {
   Keyboard
 } = require('telegram-keyboard')
 const Anibatch = require("./Api/anibatch")
+const Lk21 = require("./Api/lk21")
+
 const anibatch = new Anibatch()
+const lk21 = new Lk21()
 //const lk21 = new Lk21()
 
 //const bot = new Telegraf(process.env.BOT_TOKEN)
-const bot = new Telegraf("5824625543:AAEslB26tupftKCDQTs0OULDa1uYWxv6XfM")
+const bot = new Telegraf(process.env.TOKEN)
 
 async function asyncForEach(array, callback) {
   for (let index = 0; index < array.length; index++) {
@@ -99,10 +103,10 @@ bot.action(/(^show[-]anibatch[-])+(.*)/gm, async (ctx) => {
   ctx.reply('klicked')
   const id = ctx.match[2]
   let data = await anibatch.show(id)
-    // Using context shortcut
-    ctx.answerCbQuery()
-console.log(id)
-  if (!data)  {
+  // Using context shortcut
+  ctx.answerCbQuery()
+  console.log(id)
+  if (!data) {
     console.log(data)
     ctx.reply('maaf data tidak ditemukan')
   } else {
@@ -114,10 +118,6 @@ console.log(id)
 
 
 
-
-bot.hears(/reverse (.+)/, (ctx) =>
-  ctx.reply(ctx.match[1].split('').reverse().join(''))
-)
 
 
 
@@ -133,55 +133,100 @@ bot.hears('hi', (ctx) => ctx.reply('Hey there'));
 
 
 bot.hears(/lk21/ig, async (ctx) => {
-  const query = ctx.match[1]
-  console.log(query)
-  ctx.reply('hello')
 
-  /*
-  asyncForEach(data, async (num, i, v) => {
-    //ctx.telegram.sendMessage(ctx.message.chat.id, `Command ${ctx.state.role}`);
-    const keyboard = Keyboard.make([
-      ['Download'], // First row
-      // Second row
-    ])
-    console.log()
-    */
-  // ctx.telegram.sendMessage(ctx.message.chat.id, v.title);
+  if (ctx.match.input.match(/(?<=\/lk21.).*/gm) == null) {
+    ctx.reply('anda belum memasukan parameter ! \n baca petunjuk /help')
+  } else {
+    const param = ctx.match.input.match(/(?<=\/lk21.).*/gm)[0]
 
-  /*
-    ctx.replyWithPhoto({
-      url: v.thumb
-    }, {
-      caption: 'Your caption'
-    })
-    ctx.reply(v.title, keyboard.inline())
-    //await waitFor(50);
-    //console.log(num);
-    */
+    let data = await lk21.search(param)
+    const list = data.results.data
+    if (data == null) {
+      ctx.reply('maaf data tidak ditemukan')
+    } else
+    {
+      await list.reduce((accumulatorPromise, data, i) => {
+        return accumulatorPromise.then(() => {
+          return new Promise((resolve, reject) => {
+            //console.log(data['title'])
+            //let send = ctx.reply("oke")
+            ctx.replyWithChatAction('typing')
+            let send = ctx.replyWithPhoto({
+              url: data.img
+            },
+              {
+                caption: data.title,
+                parse_mode: 'Markdown',
+                ...Markup.inlineKeyboard([
+                  Markup.button.callback('download', 'show-lk21-' + data.id)
 
+                ])
+              }
+            )
+            resolve(send)
+          });
+        });
+      }, Promise.resolve());
+    }
+  }
 
-
-
-
-  /*
-  data.forEach(function(v, i) {
-    //console.log(v)
-    const keyboard = Keyboard.make([
-      ['Download'], // First row
-      // Second row
-    ])
-    // ctx.telegram.sendMessage(ctx.message.chat.id, v.title);
-    ctx.replyWithPhoto({
-      url: v.thumb
-    }, {
-      caption: 'Your caption'
-    })
-    ctx.reply(v.title, keyboard.inline())
-  })
-*/
-  // Using context shortcut
-  //await ctx.leaveChat();
 });
+
+
+bot.action(/(^show[-]lk21[-])+(.*)/gm, async (ctx) => {
+
+  const id = ctx.match[2]
+  let data = await lk21.show(id)
+  // Using context shortcut
+  //ctx.answerCbQuery()
+  //console.log(id)
+  if (!data) {
+    //console.log(data)
+    ctx.reply('maaf data tidak ditemukan')
+  } else {
+
+    const button = []
+
+    for (let key in data.results) {
+      button.push(Markup.button.url(data['results'][key]['item'], data['results'][key]['link']))
+    }
+
+    /*
+    ctx.reply(
+      'choose server to download',
+      Markup.inlineKeyboard(button)
+    )
+    */
+
+    await ctx.editMessageCaption(
+      "choose server to download",
+      Markup.inlineKeyboard(button)
+    );
+
+
+  }
+
+})
+
+bot.command("random", ctx => {
+  return ctx.reply(
+    "random example",
+    Markup.inlineKeyboard([
+      Markup.button.callback("Coke", "Coke"),
+      Markup.button.callback("Dr Pepper", "Dr Pepper", Math.random() > 0.5),
+      Markup.button.callback("Pepsi", "Pepsi"),
+    ]),
+  );
+});
+
+bot.command('pyramid', (ctx) => {
+  return ctx.reply(
+    "Keyboard wrap",
+    Markup.inlineKeyboard(["one", "two", "three", "four", "five", "six"], {
+      wrap: (btn, index, currentRow) => currentRow.length >= (index + 1) / 2,
+    }),
+  );
+})
 
 bot.command('quit', async (ctx) => {
   // Explicit usage
@@ -193,7 +238,8 @@ bot.command('quit', async (ctx) => {
 
 bot.on(message('text'), async (ctx) => {
   // Explicit usage
-  await ctx.telegram.sendMessage(ctx.message.chat.id, `Command ${ctx.state.role}`);
+  await ctx.telegram.sendMessage(ctx.message.chat.id,
+    `Command ${ctx.state.role}`);
 
   // Using context shortcut
   //await ctx.reply(`Hello ${ctx.state.role}`);
@@ -210,7 +256,8 @@ bot.on('callback_query', async (ctx) => {
 bot.on('inline_query', async (ctx) => {
   const result = [];
   // Explicit usage
-  await ctx.telegram.answerInlineQuery(ctx.inlineQuery.id, result);
+  await ctx.telegram.answerInlineQuery(ctx.inlineQuery.id,
+    result);
 
   // Using context shortcut
   await ctx.answerInlineQuery(result);

@@ -1,6 +1,6 @@
 const axios = require("axios")
-const url = "https://encouraging-bat-sun-hat.cyclic.app/api/anime/anibatch/"
-class Anibatch {
+const url = "https://encouraging-bat-sun-hat.cyclic.app/api/movie/lk21/"
+class Lk21 {
   async search(query) {
 
     let result = await axios.get(url+'search?q=' + query).then((res) => {
@@ -33,7 +33,7 @@ class Anibatch {
 
     let result = await axios.get(url+'show?id=' + id).then((res) => {
       const data = res.data
-      console.log(data)
+      //console.log(data)
       return data
     }).catch(function (error) {
       if (error.response) {
@@ -56,4 +56,4 @@ class Anibatch {
   }
 }
 
-module.exports = Anibatch
+module.exports = Lk21
